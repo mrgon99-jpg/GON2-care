@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>효심케어 v6.0</title>
+    <style>
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background: #f1f2f6; padding: 0; margin: 0; padding-bottom: 80px; }
+        .header { background: #d63031; color: white; padding: 15px; border-radius: 0 0 25px 25px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100; }
+        .container { padding: 0 15px; }
+        .search-box { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #d63031; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; }
+        .btn-cam { width: 100%; padding: 18px; font-size: 18px; background: #2f3640; color: white; border: none; border-radius: 12px; margin-bottom: 15px; font-weight: bold; }
+        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-left: 6px solid #d63031; text-align: left; }
+        .name-tag { font-size: 17px; font-weight: bold; color: #2d3436; margin-bottom: 10px; display: block; }
+        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn-sub { flex: 1; min-width: 75px; padding: 12px 5px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 13px; background: #0984e3; }
+        .btn-delete { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; color: #999; }
+        #status { margin: 10px 0; font-weight: bold; color: #d63031; font-size: 14px; min-height: 20px; }
+        .admin-section { background: #dfe6e9; padding: 15px; border-radius: 15px; margin-top: 30px; text-align: left; }
+        .input-group { display: flex; gap: 5px; margin-top: 8px; margin-bottom: 12px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .btn-add { padding: 10px 15px; background: #2d3436; color: white; border: none; border-radius: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header"><h3 style="margin:0;">❤️ 효심케어 v6.0</h3></div>
+    <div class="container">
+        <input type="text" id="search-input" class="search-box" placeholder="🔍 어르신 성함 검색" inputmode="text" onkeyup="filterSeniors()">
+        <input type="file" id="camera" accept="image/*" capture="camera" style="display:none;" onchange="imageSelected()">
+        <button class="btn-cam" onclick="document.getElementById('camera').click()">📸 사진 촬영</button>
+        <div id="status">대기 중...</div>
+        <div id="senior-list"></div>
+        <div class="admin-section">
+            <div style="font-weight: bold; font-size: 14px;">⚙️ 관리</div>
+            <div class="input-group"><input type="text" id="new-name" placeholder="성함 추가" inputmode="text"><button class="btn-add" onclick="addSenior()">추가</button></div>
+            <div class="input-group"><input type="text" id="new-cat" placeholder="항목 추가" inputmode="text"><button class="btn-add" onclick="addCategory()">추가</button></div>
+            <div id="category-display"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let seniors = JSON.parse(localStorage.getItem('seniors')) || ["김어르신", "박어르신"];
+        let categories = JSON.parse(localStorage.getItem('categories')) || ["약", "식사", "활동"];
+
+        renderAll();
+
+        function imageSelected() {
+            selectedFile = document.getElementById('camera').files[0];
+            if (selectedFile) document.getElementById('status').innerText = "📍 촬영 완료! 성함을 선택하세요.";
+        }
+
+        function filterSeniors() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const cards = document.getElementsByClassName('card');
+            Array.from(cards).forEach(card => {
+                const name = card.getAttribute('data-name').toLowerCase();
+                card.style.display = name.includes(query) ? "block" : "none";
+            });
+        }
+
+        function renderAll() {
+            const listDiv = document.getElementById('senior-list');
+            listDiv.innerHTML = '';
+            seniors.forEach((name, sIdx) => {
+                let catButtons = categories.map(cat => `<button class="btn-sub" onclick="saveFile('${name}', '${cat}')">${cat}</button>`).join('');
+                listDiv.innerHTML += `<div class="card" data-name="${name}">
+                    <button class="btn-delete" onclick="deleteSenior(${sIdx})">X</button>
+                    <span class="name-tag">👤 ${name}</span><div class="btn-group">${catButtons}</div></div>`;
+            });
+            localStorage.setItem('seniors', JSON.stringify(seniors));
+            localStorage.setItem('categories', JSON.stringify(categories));
+        }
+
+        function addSenior() {
+            const input = document.getElementById('new-name');
+            if (input.value.trim()) { seniors.push(input.value.trim()); input.value = ''; renderAll(); }
+        }
+
+        function deleteSenior(index) { if (confirm("삭제할까요?")) { seniors.splice(index, 1); renderAll(); } }
+
+        function addCategory() {
+            const input = document.getElementById('new-cat');
+            if (input.value.trim()) { categories.push(input.value.trim()); input.value = ''; renderAll(); }
+        }
+
+        function saveFile(name, type) {
+            if (!selectedFile) { alert("사진을 찍어주세요!"); return; }
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}시${String(now.getMinutes()).padStart(2,'0')}분`;
+            const fileName = `${name}_${type}_${dateStr}_${timeStr}.jpg`;
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(selectedFile);
+            link.download = fileName;
+            link.click();
+
+            document.getElementById('status').innerText = "✅ " + fileName + " 저장 완료!";
+            selectedFile = null;
+        }
+    </script>
+</body>
+</html>
