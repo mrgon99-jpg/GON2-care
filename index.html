@@ -2,103 +2,165 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>효심케어 v6.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    <title>효심 식단표 v4.2</title>
     <style>
-        body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background: #f1f2f6; padding: 0; margin: 0; padding-bottom: 80px; }
-        .header { background: #d63031; color: white; padding: 15px; border-radius: 0 0 25px 25px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100; }
-        .container { padding: 0 15px; }
-        .search-box { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #d63031; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; }
-        .btn-cam { width: 100%; padding: 18px; font-size: 18px; background: #2f3640; color: white; border: none; border-radius: 12px; margin-bottom: 15px; font-weight: bold; }
-        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-left: 6px solid #d63031; text-align: left; }
-        .name-tag { font-size: 17px; font-weight: bold; color: #2d3436; margin-bottom: 10px; display: block; }
-        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
-        .btn-sub { flex: 1; min-width: 75px; padding: 12px 5px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 13px; background: #0984e3; }
-        .btn-delete { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; color: #999; }
-        #status { margin: 10px 0; font-weight: bold; color: #d63031; font-size: 14px; min-height: 20px; }
-        .admin-section { background: #dfe6e9; padding: 15px; border-radius: 15px; margin-top: 30px; text-align: left; }
-        .input-group { display: flex; gap: 5px; margin-top: 8px; margin-bottom: 12px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        .btn-add { padding: 10px 15px; background: #2d3436; color: white; border: none; border-radius: 8px; font-weight: bold; }
+        /* [기존 스타일 동일] */
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #f5f6fa; display: flex; flex-direction: column; font-family: -apple-system, sans-serif; position: fixed; }
+        .header { background: #2c3e50; color: white; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .header h2 { margin: 0; font-size: 19px; }
+        .calendar-container { background: white; margin: 10px; padding: 12px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); flex-shrink: 0; }
+        .calendar-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .nav-btn { background: #f1f3f5; border: none; padding: 5px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #2c3e50; }
+        .current-month { font-weight: bold; font-size: 17px; color: #2c3e50; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
+        .day-label { font-size: 11px; color: #7f8c8d; padding-bottom: 6px; font-weight: bold; }
+        .day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; border-radius: 10px; position: relative; }
+        .day.today { color: #3498db; font-weight: bold; background: #ebf5ff; }
+        .day.selected { background: #34495e !important; color: white !important; font-weight: bold; }
+        .day.has-meal::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: #e67e22; border-radius: 50%; }
+        .memo-container { flex-grow: 1; display: flex; flex-direction: column; margin: 0 10px 10px 10px; padding: 15px; background: white; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
+        .label { font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #34495e; }
+        .memo-area { flex-grow: 1; border: 1px solid #f1f3f5; border-radius: 10px; padding: 12px; font-size: 16px; resize: none; outline: none; line-height: 1.6; background: #fafbfc; overflow-y: auto; }
+        .sync-bar { padding: 10px; display: flex; gap: 10px; flex-shrink: 0; background: #fff; border-top: 1px solid #eee; }
+        .btn-sync { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="header"><h3 style="margin:0;">❤️ 효심케어 v6.0</h3></div>
-    <div class="container">
-        <input type="text" id="search-input" class="search-box" placeholder="🔍 어르신 성함 검색" inputmode="text" onkeyup="filterSeniors()">
-        <input type="file" id="camera" accept="image/*" capture="camera" style="display:none;" onchange="imageSelected()">
-        <button class="btn-cam" onclick="document.getElementById('camera').click()">📸 사진 촬영</button>
-        <div id="status">대기 중...</div>
-        <div id="senior-list"></div>
-        <div class="admin-section">
-            <div style="font-weight: bold; font-size: 14px;">⚙️ 관리</div>
-            <div class="input-group"><input type="text" id="new-name" placeholder="성함 추가" inputmode="text"><button class="btn-add" onclick="addSenior()">추가</button></div>
-            <div class="input-group"><input type="text" id="new-cat" placeholder="항목 추가" inputmode="text"><button class="btn-add" onclick="addCategory()">추가</button></div>
-            <div id="category-display"></div>
-        </div>
+
+<div class="header"><h2>효심 식단표 v4.2</h2></div>
+
+<div class="calendar-container">
+    <div class="calendar-nav">
+        <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
+        <div class="current-month" id="monthDisplay">2026년 3월</div>
+        <button class="nav-btn" onclick="changeMonth(1)">▶</button>
     </div>
+    <div class="calendar-grid">
+        <div class="day-label" style="color:#e74c3c">일</div><div class="day-label">월</div><div class="day-label">화</div><div class="day-label">수</div><div class="day-label">목</div><div class="day-label">금</div><div class="day-label" style="color:#3498db">토</div>
+    </div>
+    <div class="calendar-grid" id="calendarDays"></div>
+</div>
 
-    <script>
-        let selectedFile = null;
-        let seniors = JSON.parse(localStorage.getItem('seniors')) || ["김어르신", "박어르신"];
-        let categories = JSON.parse(localStorage.getItem('categories')) || ["약", "식사", "활동"];
+<div class="memo-container">
+    <div class="label" id="selectedDateText">📅 날짜를 선택하세요</div>
+    <textarea id="mealMemo" class="memo-area" placeholder="내용을 입력하세요..." oninput="autoSaveMemo()"></textarea>
+</div>
 
-        renderAll();
+<div class="sync-bar">
+    <button class="btn-sync" style="background: #27ae60;" onclick="exportMealData()">💾 백업저장</button>
+    <button class="btn-sync" style="background: #e67e22;" onclick="document.getElementById('fileInput').click()">📂 불러오기</button>
+    <input type="file" id="fileInput" hidden accept=".txt" onchange="importMealData(this)">
+</div>
 
-        function imageSelected() {
-            selectedFile = document.getElementById('camera').files[0];
-            if (selectedFile) document.getElementById('status').innerText = "📍 촬영 완료! 성함을 선택하세요.";
+<script>
+    let currentYear = 2026;
+    let currentMonth = new Date().getMonth();
+    let mealsData = {};
+    const STORAGE_KEY = "HYOSIM_MEAL_V41";
+    let selectedDateStr = "";
+
+    // 🛡️ 자동 삭제 설정 (30일이 지난 데이터 삭제)
+    const AUTO_DELETE_DAYS = 30;
+
+    function cleanOldData() {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        let deletedCount = 0;
+
+        for (const dateKey in mealsData) {
+            const targetDate = new Date(dateKey);
+            const diffTime = today - targetDate;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > AUTO_DELETE_DAYS) {
+                delete mealsData[dateKey];
+                deletedCount++;
+            }
         }
-
-        function filterSeniors() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const cards = document.getElementsByClassName('card');
-            Array.from(cards).forEach(card => {
-                const name = card.getAttribute('data-name').toLowerCase();
-                card.style.display = name.includes(query) ? "block" : "none";
-            });
+        if (deletedCount > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(mealsData));
+            console.log(`${deletedCount}개의 오래된 식단 데이터가 정리되었습니다.`);
         }
+    }
 
-        function renderAll() {
-            const listDiv = document.getElementById('senior-list');
-            listDiv.innerHTML = '';
-            seniors.forEach((name, sIdx) => {
-                let catButtons = categories.map(cat => `<button class="btn-sub" onclick="saveFile('${name}', '${cat}')">${cat}</button>`).join('');
-                listDiv.innerHTML += `<div class="card" data-name="${name}">
-                    <button class="btn-delete" onclick="deleteSenior(${sIdx})">X</button>
-                    <span class="name-tag">👤 ${name}</span><div class="btn-group">${catButtons}</div></div>`;
-            });
-            localStorage.setItem('seniors', JSON.stringify(seniors));
-            localStorage.setItem('categories', JSON.stringify(categories));
+    function changeMonth(diff) {
+        currentMonth += diff;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        document.getElementById('monthDisplay').innerText = `${currentYear}년 ${currentMonth + 1}월`;
+        const grid = document.getElementById('calendarDays');
+        grid.innerHTML = '';
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+
+        for (let i = 0; i < firstDay; i++) { grid.appendChild(document.createElement('div')); }
+
+        for (let d = 1; d <= lastDate; d++) {
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            dayEl.innerText = d;
+            if (dateStr === todayStr) dayEl.classList.add('today');
+            if (mealsData[dateStr]) dayEl.classList.add('has-meal');
+            dayEl.onclick = () => selectDate(dateStr, dayEl);
+            grid.appendChild(dayEl);
+            if (dateStr === todayStr && selectedDateStr === "") { dayEl.click(); }
+            else if (dateStr === selectedDateStr) { dayEl.classList.add('selected'); }
         }
+    }
 
-        function addSenior() {
-            const input = document.getElementById('new-name');
-            if (input.value.trim()) { seniors.push(input.value.trim()); input.value = ''; renderAll(); }
-        }
+    function selectDate(dateStr, el) {
+        selectedDateStr = dateStr;
+        document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('selectedDateText').innerText = `🍚 ${dateStr} 식단 정보`;
+        document.getElementById('mealMemo').value = mealsData[dateStr] || "";
+    }
 
-        function deleteSenior(index) { if (confirm("삭제할까요?")) { seniors.splice(index, 1); renderAll(); } }
+    function autoSaveMemo() {
+        if(!selectedDateStr) return;
+        mealsData[selectedDateStr] = document.getElementById('mealMemo').value;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mealsData));
+        renderCalendar();
+    }
 
-        function addCategory() {
-            const input = document.getElementById('new-cat');
-            if (input.value.trim()) { categories.push(input.value.trim()); input.value = ''; renderAll(); }
-        }
+    function exportMealData() {
+        const data = JSON.stringify(mealsData, null, 2);
+        const blob = new Blob([data], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `효심식단백업_${new Date().toLocaleDateString()}.txt`;
+        a.click();
+    }
 
-        function saveFile(name, type) {
-            if (!selectedFile) { alert("사진을 찍어주세요!"); return; }
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-            const timeStr = `${String(now.getHours()).padStart(2,'0')}시${String(now.getMinutes()).padStart(2,'0')}분`;
-            const fileName = `${name}_${type}_${dateStr}_${timeStr}.jpg`;
+    function importMealData(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                mealsData = {...mealsData, ...imported};
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(mealsData));
+                renderCalendar();
+                alert("데이터를 불러왔습니다!");
+            } catch (err) { alert("파일 형식이 잘못되었습니다."); }
+        };
+        reader.readAsText(file);
+    }
 
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(selectedFile);
-            link.download = fileName;
-            link.click();
-
-            document.getElementById('status').innerText = "✅ " + fileName + " 저장 완료!";
-            selectedFile = null;
-        }
-    </script>
+    window.onload = () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(saved) mealsData = JSON.parse(saved);
+        cleanOldData(); // 앱 실행 시 오래된 데이터 청소
+        renderCalendar();
+    };
+</script>
 </body>
 </html>
